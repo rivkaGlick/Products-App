@@ -1,7 +1,5 @@
 package com.example.productsapp.ui.categories
 
-import CategoriesViewModel
-import CategoryUI
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,20 +16,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
+import com.example.productsapp.CategoryUI
+import com.example.productsapp.CategoriesViewModel
 
-// Composable to display the list of categories
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesScreen(
-    onCategoryClick: (CategoryUI) -> Unit,
+    onCategorySelected: (CategoryUI) -> Unit,
     viewModel: CategoriesViewModel = viewModel()
 ) {
-    val categories by viewModel.categories.collectAsState()
+    // Collect UI state from ViewModel
+    val categoryList by viewModel.categoryList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val errorMessage by viewModel.loadError.collectAsState()
 
+    // Load categories when screen first appears
     LaunchedEffect(Unit) {
-        viewModel.loadCategories() // Initial data load
+        viewModel.fetchCategories()
     }
 
     Scaffold(
@@ -40,23 +41,38 @@ fun CategoriesScreen(
                 title = { Text("Categories") },
                 actions = {
                     IconButton(onClick = { viewModel.refreshCategories() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh categories")
                     }
                 }
             )
         },
         content = { paddingValues ->
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
                 when {
-                    isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                    error != null -> Text(
-                        text = "Error: $error",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                    else -> LazyColumn {
-                        // Display categories list
-                        items(categories) { category ->
-                            CategoryCard(category = category, onClick = { onCategoryClick(category) })
+                    isLoading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                    errorMessage != null -> {
+                        Text(
+                            text = "Error: $errorMessage",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(categoryList) { category ->
+                                CategoryItemCard(
+                                    category = category,
+                                    onClick = { onCategorySelected(category) }
+                                )
+                            }
                         }
                     }
                 }
@@ -65,26 +81,25 @@ fun CategoriesScreen(
     )
 }
 
-// Category card displayed in the list
 @Composable
-fun CategoryCard(category: CategoryUI, onClick: () -> Unit) {
+fun CategoryItemCard(category: CategoryUI, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
-            .clickable { onClick() } // Navigate to category details screen
+            .clickable { onClick() }
     ) {
         Row(modifier = Modifier.padding(8.dp)) {
             Image(
                 painter = rememberAsyncImagePainter(category.thumbnail),
-                contentDescription = null,
+                contentDescription = "Category image",
                 modifier = Modifier.size(64.dp),
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(8.dp))
             Column {
                 Text(category.name, fontWeight = FontWeight.Bold)
-                Text("Products: ${category.productsCount}")
+                Text("Products: ${category.itemCount}")
                 Text("Stock: ${category.totalStock}")
             }
         }

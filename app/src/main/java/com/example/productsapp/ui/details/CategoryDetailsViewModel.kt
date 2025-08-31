@@ -11,38 +11,37 @@ import kotlinx.coroutines.launch
 
 class CategoryDetailsViewModel : ViewModel() {
 
-    // Repository instance for fetching products
-    private val repo = ProductsRepository()
+    private val repository = ProductsRepository() // Responsible for fetching products
 
-    // StateFlow for the list of products
+    // List of products for the selected category
     private val _products = MutableStateFlow<List<Product>>(emptyList())
     val products: StateFlow<List<Product>> get() = _products
 
-    // StateFlow for error messages
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> get() = _error
-
-    // StateFlow to indicate loading state
+    // Loading state
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> get() = _isLoading
 
-    // Load products for a given category
-    fun loadProducts(category: String) {
+    // Error message
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> get() = _error
+
+    // Load products for a specific category
+    fun loadProducts(categoryName: String) {
         viewModelScope.launch {
-            _isLoading.value = true // Start loading
-            when (val result = repo.fetchProducts()) {
+            _isLoading.value = true
+
+            when (val result = repository.fetchProducts()) {
                 is Result.Success -> {
-                    // Filter products for the selected category
-                    _products.value = result.data.filter { it.category == category }
-                    _error.value = null // Clear any previous errors
+                    _products.value = result.data.filter { it.category == categoryName }
+                    _error.value = null
                 }
                 is Result.Error -> {
-                    // Set products to empty list and store error message
                     _products.value = emptyList()
                     _error.value = result.exception.message
                 }
             }
-            _isLoading.value = false // Loading finished
+
+            _isLoading.value = false
         }
     }
 }

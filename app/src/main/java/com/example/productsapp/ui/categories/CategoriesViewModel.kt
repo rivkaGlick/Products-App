@@ -1,3 +1,5 @@
+package com.example.productsapp
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.productsapp.repository.ProductsRepository
@@ -6,58 +8,61 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-// CategoryUI - model representing a product category in the first screen
+// Model representing a category for the UI
 data class CategoryUI(
     val name: String,
     val thumbnail: String,
-    val productsCount: Int,
+    val itemCount: Int,
     val totalStock: Int
 )
 
-// ViewModel to manage category data
 class CategoriesViewModel : ViewModel() {
 
-    private val repo = ProductsRepository() // Responsible for fetching product data from the API
+    private val repository = ProductsRepository() // fetch products
 
-    // StateFlow holding the list of categories for UI
-    private val _categories = MutableStateFlow<List<CategoryUI>>(emptyList())
-    val categories: StateFlow<List<CategoryUI>> get() = _categories
+    // List of categories for UI
+    private val _categoryList = MutableStateFlow<List<CategoryUI>>(emptyList())
+    val categoryList: StateFlow<List<CategoryUI>> get() = _categoryList
 
-    // StateFlow to track errors
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> get() = _error
+    // Loading state
+    private val _loading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> get() = _loading
 
-    // StateFlow to track loading state
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> get() = _isLoading
+    // Error message
+    private val _loadError = MutableStateFlow<String?>(null)
+    val loadError: StateFlow<String?> get() = _loadError
 
-    // Function to load categories from the server
-    fun loadCategories(forceRefresh: Boolean = false) {
+    // Load categories, optionally forcing refresh
+    fun fetchCategories(forceReload: Boolean = false) {
         viewModelScope.launch {
-            _isLoading.value = true // Start loading
-            when (val result = repo.fetchProducts(forceRefresh)) {
+            _loading.value = true
+
+            when (val result = repository.fetchProducts(forceReload)) {
                 is Result.Success -> {
                     val grouped = result.data.groupBy { it.category }
-                    _categories.value = grouped.map { (category, items) ->
+                    _categoryList.value = grouped.map { (categoryName, items) ->
                         CategoryUI(
-                            name = category,
-                            thumbnail = items.first().thumbnail, // Thumbnail of the first product in the category
-                            productsCount = items.size,
+                            name = categoryName,
+                            thumbnail = items.first().thumbnail,
+                            itemCount = items.size,
                             totalStock = items.sumOf { it.stock }
                         )
                     }
-                    _error.value = null
+                    _loadError.value = null
                 }
+
                 is Result.Error -> {
-                    _categories.value = emptyList()
-                    _error.value = result.exception.message
+                    _categoryList.value = emptyList()
+                    _loadError.value = result.exception.message
                 }
             }
-            _isLoading.value = false
+
+            _loading.value = false
         }
     }
 
+    // Force refresh categories
     fun refreshCategories() {
-        loadCategories(forceRefresh = true)
+        fetchCategories(forceReload = true)
     }
 }

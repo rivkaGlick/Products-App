@@ -5,35 +5,35 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import com.example.productsapp.ui.categories.CategoriesScreen
-import CategoryUI
 import com.example.productsapp.ui.details.CategoryDetailsScreen
+import com.example.productsapp.CategoryUI
 
-// Main entry point of the app
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Set Compose content for this activity
         setContent {
-            App() // Call the root composable
+            ProductsApp()
         }
     }
 }
 
-// Root composable that handles navigation between screens
 @Composable
-fun App() {
-    // Remember the currently selected category for navigation
+fun ProductsApp() {
+    // Keep track of the currently selected category
     var selectedCategory by remember { mutableStateOf<CategoryUI?>(null) }
 
-    // Show either CategoriesScreen or CategoryDetailsScreen based on selection
-    selectedCategory?.let { category ->
+    if (selectedCategory != null) {
+        // Show details for the selected category
         CategoryDetailsScreen(
-            categoryName = category.name,
-            onBack = { selectedCategory = null } // Navigate back to categories screen
+            categoryName = selectedCategory!!.name,
+            onBackPressed = { selectedCategory = null } // Go back to the categories list
         )
-    } ?: CategoriesScreen(
-        onCategoryClick = { category ->
-            selectedCategory = category // Navigate to details screen when a category is clicked
-        }
-    )
+    } else {
+        // Show the list of categories
+        CategoriesScreen(
+            onCategorySelected = { category ->
+                selectedCategory = category // Navigate to details screen when clicked
+            }
+        )
+    }
 }
