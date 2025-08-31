@@ -1,4 +1,3 @@
-// CategoryDetailsScreen.kt
 package com.example.productsapp.ui.details
 
 import androidx.compose.foundation.Image
@@ -6,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,12 +24,14 @@ fun CategoryDetailsScreen(
     onBack: () -> Unit,
     viewModel: CategoryDetailsViewModel = viewModel()
 ) {
+    // Collect state from ViewModel
     val products by viewModel.products.collectAsState()
-    var isLoading by remember { mutableStateOf(true) }
+    val error by viewModel.error.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
+    // Load products for this category when the screen appears
     LaunchedEffect(categoryName) {
-        viewModel.loadCategory(categoryName)
-        isLoading = false
+        viewModel.loadProducts(categoryName)
     }
 
     Scaffold(
@@ -38,8 +39,8 @@ fun CategoryDetailsScreen(
             TopAppBar(
                 title = { Text(categoryName) },
                 navigationIcon = {
-                    IconButton(onClick = { onBack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -50,30 +51,27 @@ fun CategoryDetailsScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(products) { product ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(8.dp)
-                            ) {
-                                Row(modifier = Modifier.padding(8.dp)) {
-                                    Image(
-                                        painter = rememberAsyncImagePainter(product.thumbnail),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(64.dp),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
-                                        Text(product.title, fontWeight = FontWeight.Bold)
-                                        Text("Price: ${product.price}$")
-                                        Text("Stock: ${product.stock}")
-                                    }
-                                }
+                when {
+                    isLoading -> {
+                        // Show loading indicator while fetching data
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                    error != null -> {
+                        // Display error message if something went wrong
+                        Text(
+                            text = error ?: "Unknown error",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    else -> {
+                        // Display list of products
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(8.dp)
+                        ) {
+                            items(products) { product ->
+                                ProductCard(product)
                             }
                         }
                     }
@@ -81,4 +79,32 @@ fun CategoryDetailsScreen(
             }
         }
     )
+}
+
+@Composable
+fun ProductCard(product: Product) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Row(modifier = Modifier.padding(8.dp)) {
+            // Product thumbnail image
+            Image(
+                painter = rememberAsyncImagePainter(product.thumbnail),
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                // Product title
+                Text(product.title, fontWeight = FontWeight.Bold)
+                // Product price
+                Text("Price: $${product.price}")
+                // Product stock
+                Text("Stock: ${product.stock}")
+            }
+        }
+    }
 }
