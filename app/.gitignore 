@@ -1,0 +1,32 @@
+# Gradle
+.gradle/
+build/
+
+# Local configuration
+local.properties
+.idea/
+*.iml
+
+# Kotlin / Compose caches
+*.log
+.cxx/
+.externalNativeBuild/
+
+# Android Studio
+captures/
+outputs/
+*.hprof
+
+# Jetpack Compose specific
+.compose-compiler/
+.compose-metrics/
+
+# Ignore user-specific files
+*.swp
+*.swo
+*.DS_Store
+
+# Misc
+*.apk
+*.ap_
+*.aab
